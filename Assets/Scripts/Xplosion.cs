@@ -10,6 +10,7 @@ public class Xplosion : MonoBehaviour
 
 	[Header("Xplosion")]
 	[SerializeField] float xMagnitude = 20; //I'm not being technical here...
+	[SerializeField] float yMagnitude = 0;
 
 	[Header("Reference")]
 	public Unit[] units;
@@ -31,8 +32,7 @@ public class Xplosion : MonoBehaviour
 			pos.z = radius * Mathf.Sin(t * Mathf.Deg2Rad);
 			pos.y = ((int)t / (360));
 			units[i].transform.position = pos;
-			units[i].rb.velocity = Vector3.zero;
-			units[i].rb.angularVelocity = Vector3.zero;
+			units[i].Reset();
 			units[i].transform.forward = pos + (Vector3.down * pos.y); //Sphere to Cylinder :P
 			t += angleStep;
 		}
@@ -50,6 +50,7 @@ public class Xplosion : MonoBehaviour
 			//u.rb.AddExplosionForce(xForce, xPoint, 1E4F, 0f);
 			dir = u.transform.position - xPoint;
 			xVel = dir.normalized * Mathf.Lerp(xSpeed, 0f, (dir.magnitude/100f)); //Drop to 0 With Distance of 100, Will it look good? IDK
+			xVel.y += yMagnitude;
 			u.Set_Velocity(xVel);
 		}
 	}

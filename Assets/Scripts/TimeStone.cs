@@ -12,6 +12,13 @@ public class TimeStone : MonoBehaviour
 		inst = this;
 	}
 
+	// because i've set Scene according to technique
+	public void Change_Technique(int tech)
+	{
+		if (tech != (int)technique)
+			UnityEngine.SceneManagement.SceneManager.LoadScene(tech);
+	}
+
 	public enum RecTech
 	{
 		FixedInterval, Manual
@@ -24,6 +31,7 @@ public class TimeStone : MonoBehaviour
 	public RecTech technique;
 	public TimeState state;
 	public float speed = 1;
+	public float SPEED { set { speed = value; } }
 	public float interval = 0.5f;
 	public AnimationCurve playCurve;// A lovely timeReplayFX Curve maybe
 
@@ -40,6 +48,10 @@ public class TimeStone : MonoBehaviour
 	bool recording = false;
 	bool chkMovement = false;
 	float timer = 0;
+	private void OnEnable()
+	{
+		Physics.autoSimulation = (technique == RecTech.FixedInterval);
+	}
 	private void LateUpdate()
 	{
 		if (recording)
@@ -47,11 +59,19 @@ public class TimeStone : MonoBehaviour
 			timer += Time.deltaTime;
 			if (timer >= interval)
 			{
-				timer -= interval;
-				chkMovement = false;
-				foreach (var u in units)
-					chkMovement |= u.Record_Capture();
-				if (!chkMovement)
+				if (technique == RecTech.FixedInterval)
+				{
+					timer -= interval;
+					chkMovement = false;
+					foreach (var u in units)
+						chkMovement |= u.Record_Capture();
+					if (!chkMovement)
+					{
+						Time_Record_Stop();
+						Time_Record_Play();
+					}
+				}
+				else if (technique == RecTech.Manual)
 				{
 					Time_Record_Stop();
 					Time_Record_Play();
@@ -69,7 +89,7 @@ public class TimeStone : MonoBehaviour
 
 		state = TimeState.None;
 		recording = true;
-		Physics.autoSimulation = true;
+		Physics.autoSimulation = (technique == RecTech.FixedInterval);
 		foreach (var u in units)
 			u.Record_Start();
 		timer = 0;
@@ -101,7 +121,6 @@ public class TimeStone : MonoBehaviour
 	}
 	public void Time_Direction(float dir)
 	{
-		speed = Mathf.Abs(dir);
 		if (dir > 0)
 			state = TimeState.Flow;
 		else if (dir < 0)
@@ -115,7 +134,7 @@ public class TimeStone : MonoBehaviour
 
 		foreach (var u in units)
 			u.Reset();
-		Physics.autoSimulation = true;
+		Physics.autoSimulation = (technique == RecTech.FixedInterval);
 		onRecordEnd.Invoke();
 	}
 

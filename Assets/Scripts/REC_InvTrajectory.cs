@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-public class REC_FixedInterval : Unit
+//If i have to Choose one, I'll Definitely go with this one
+//because it's little Memory footprint <3
+public class REC_InvTrajectory : Unit
 {
     [System.Serializable]
     public struct TimeEvent
@@ -16,29 +17,32 @@ public class REC_FixedInterval : Unit
         public Vector3 iPos;
         public Quaternion iRot;
     }
+    float iTime;
+    [SerializeField] Vector3 lVel, aVel;
     [SerializeField]
     List<TimeEvent> events = new List<TimeEvent>();
     public override void Set_Velocity(Vector3 vel)
     {
-        rb.velocity = vel;
+        lVel = vel;
+        aVel = Random.insideUnitSphere * 1E2F; // looks better
+        iTime = Time.time;
     }
 
     static bool record = false;
     public override void Record_Start()
     {
         events.Clear();
-        Record_Capture();
+        events.Add(new TimeEvent(transform));
     }
     public override int Record_Stop()
     {
-        Record_Capture();
         record = false;
+        events.Add(new TimeEvent(transform));
         return events.Count;
     }
     public override bool Record_Capture()
     {
-        events.Add(new TimeEvent(transform));
-        return !rb.IsSleeping();
+        return true;
     }
 
     Coroutine corID;
@@ -57,11 +61,11 @@ public class REC_FixedInterval : Unit
 
     IEnumerator ProcessRecord()
     {
-        int itr = events.Count - 1;
-        while (true) // The Endless bargin with TimeLoop
+        float time = (Time.time - iTime);
+        float maxTime = TimeStone.inst.interval;
+        while (true)
         {
-            transform.position = events[itr].iPos;
-            transform.rotation = events[itr].iRot;
+            var simSpeed = TimeStone.inst.speed;
             switch (TimeStone.inst.state)
             {
                 case TimeStone.TimeState.None:
@@ -71,32 +75,31 @@ public class REC_FixedInterval : Unit
                     yield return null;
                     break;
                 case TimeStone.TimeState.Flow:
-                    if (itr + 1 < events.Count)
-                        yield return Simulate(events[itr], events[++itr]);
+                    time += Time.deltaTime * simSpeed;
+                    if (time < maxTime)
+                        Simulate(events[0], events[1], time);
                     else
-                        yield return null;
+                        time = maxTime;
+                    yield return null;
                     break;
                 case TimeStone.TimeState.Rewind:
-                    if(itr > 0)
-                        yield return Simulate(events[itr], events[--itr]);
+                    time -= Time.deltaTime * simSpeed;
+                    if (time > 0)
+                        Simulate(events[0], events[1], time);
                     else
-                        yield return null;
+                        time = 0;
+                    yield return null;
                     break;
             }
         }
     }
-    IEnumerator Simulate(TimeEvent frm, TimeEvent to)
+    void Simulate(TimeEvent frm, TimeEvent to, float t)
     {
-        float t = 0f;
-        var simSpeed = TimeStone.inst.speed / TimeStone.inst.interval;
-        while (t < 1)
-        {
-            t += Time.deltaTime * simSpeed;
-            transform.position = Vector3.Lerp(frm.iPos, to.iPos, t);
-            transform.rotation = Quaternion.Lerp(frm.iRot, to.iRot, t);
-            yield return null;
-        }
-        transform.position = to.iPos;
-        transform.rotation = to.iRot;
+        Vector3 nPos = frm.iPos + lVel * t;
+        nPos.y += (0.5f * (-9.81f) * t * t);
+        transform.position = nPos;
+
+        Quaternion nRot = Quaternion.Euler(frm.iRot.eulerAngles + aVel * t);
+        transform.rotation = nRot;
     }
 }

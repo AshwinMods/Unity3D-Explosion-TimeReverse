@@ -8,4 +8,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/FixedInterval.unity
     guid: bf32e28ed4e5f0549885de63b99a53f5
+  - enabled: 1
+    path: Assets/InverseTrajectory.unity
+    guid: 201414b0a9ddbb84b834d24ac916bb31
   m_configObjects: {}

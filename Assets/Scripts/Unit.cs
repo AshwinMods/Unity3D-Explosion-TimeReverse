@@ -3,7 +3,6 @@ using System.Collections;
 using UnityEngine;
 using System;
 
-[RequireComponent(typeof(Rigidbody))]
 public class Unit : MonoBehaviour
 {
     //Using Abstraction, because i'm looking for more solution as well.
@@ -15,7 +14,8 @@ public class Unit : MonoBehaviour
     }
     public virtual void Set_Velocity(Vector3 vel)
     {
-        rb.velocity = vel;
+        if(rb != null)
+            rb.velocity = vel;
     }
     public virtual void Record_Start()
     {
@@ -36,8 +36,11 @@ public class Unit : MonoBehaviour
 
     }
     public virtual void Reset()
-	{
-        rb.velocity = Vector3.zero;
-        rb.angularVelocity = Vector3.zero;
+    {
+        if (rb != null)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+        }
 	}
 }
